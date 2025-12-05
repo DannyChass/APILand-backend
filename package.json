@@ -1,0 +1,19 @@
+{
+  "name": "APILand-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/DannyChass/APILand-backend.git",
+  "author": "Daniel Chassagnez Goncalves <daniel.chassagn@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.0.0",
+    "uuid": "^13.0.0"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  }
+}
