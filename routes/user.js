@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require('uuid');
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
+const BlacklistedToken = require("../models/blacklistedToken");
+const { hashToken } = require("../utils/hashToken");
 
 router.post("/signup", async (req, res) => {
     try {
@@ -102,5 +104,33 @@ router.post("/signin", async (req, res) => {
         res.json({ result: false, error: error.message });
     }
 });
+
+router.post("/signout", async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+            return res.json({ result: false, error: "No token provided" });
+        }
+
+        const token = authHeader.replace("Bearer ", "");
+
+        try {
+            jwt.verify(token, process.env.JWT_SECRET);
+        } catch (err) {
+            return res.json({ result: false, error: "Invalid or expired token" });
+        }
+
+        const hashed = await hashToken(token);
+
+        const blacklisted = new BlacklistedToken({ tokenHash: hashed });
+        await blacklisted.save();
+
+        return res.json({ result: true, message: "User logged out successfully" });
+
+    } catch (error) {
+        return res.json({ result: false, error: error.message });
+    }
+})
 
 module.exports = router;
