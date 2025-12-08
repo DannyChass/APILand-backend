@@ -6,6 +6,7 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const BlacklistedToken = require("../models/blacklistedToken");
 const { hashToken } = require("../utils/hashToken");
+const checkToken = require("../middlewares/checkToken");
 
 router.post("/signup", async (req, res) => {
     try {
@@ -130,6 +131,64 @@ router.post("/signout", async (req, res) => {
 
     } catch (error) {
         return res.json({ result: false, error: error.message });
+    }
+})
+
+router.get("/me", checkToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+
+        if (!user) {
+            return res.status(404).json({ result: false, error: "User not found" });
+        }
+
+        res.json({
+            result: true,
+            user
+        })
+
+    } catch (error) {
+        res.status(500).json({ result: false, error: error.message });
+    }
+})
+
+router.patch("/me", checkToken, async (req, res) => {
+    try {
+
+        const allowedFields = ["username", "firstname", "lastname", "email", "email", "telephoneNumber"];
+
+        const updates = {};
+
+        for (const key of allowedFields) {
+            if (req.body[key] !== undefined) {
+                updates[key] = req.body[key];
+            }
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ result: false, error: "No valid field provided" });
+        }
+
+        if (updates.email) {
+            const existingEmailUser = await User.findOne({ email: updates.email });
+            if (existingEmailUser && existingEmailUser._id.toString() !== req.user.id) {
+                return res.status(400).json({ result: false, error: "Email already in use" });
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            updates,
+            { new: true }
+        ).select("-password");
+
+        res.json({
+            result: true,
+            user: updatedUser
+        });
+
+    } catch (error) {
+        res.status(500).json({ result: false, error: error.message });
     }
 })
 
