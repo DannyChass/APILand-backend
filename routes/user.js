@@ -60,4 +60,47 @@ router.post("/signup", async (req, res) => {
     }
 })
 
+router.post("/signin", async (req, res) => {
+    try {
+
+
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.json({ result: false, error: "Missing fields" });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.json({ result: false, error: "User not found" });
+        }
+
+        const passwordIsValid = await bcrypt.compare(password, user.password);
+
+        if (!passwordIsValid) {
+            return res.json({ result: false, error: "Invalid password" });
+        }
+
+        const token = jwt.sign({
+            id: user._id,
+            email: user.email,
+        },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.json({
+            result: true,
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+            }
+        })
+    } catch (error) {
+        res.json({ result: false, error: error.message });
+    }
+});
+
 module.exports = router;
