@@ -2,10 +2,11 @@ require("dotenv").config();
 const express = require("express");
 const connectDB = require("./models/connexion");
 const userRoutes = require("./routes/user");
+const cors = require("cors");
 
 const app = express();
 var cookieParser = require('cookie-parser');
-var apiRouter=require('./routes/api');
+var apiRouter = require('./routes/api');
 
 app.use(express.json());
 
@@ -22,6 +23,7 @@ app.listen(3000, () => {
   console.log("Server running on port 3000");
 });
 
+app.use(cors());
 app.use('/api', apiRouter);
 app.use("/users", userRoutes);
 
