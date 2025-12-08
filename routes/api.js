@@ -3,9 +3,9 @@ var router = express.Router();
 
 require('../models/connexion');
 const Api = require('../models/apis');
-const { checkBody } = require('../modules/checkBody')
+const checkToken = require ('../middlewares/checkToken');
 
-router.post('/', (req, res) => {
+router.post('/', checkToken, (req, res) => {
     console.log(req.body)
     if (!req.body || !req.body.name || req.body.name === '') {
         res.json({ result: false, error: 'missing compulsory field' });
@@ -21,6 +21,7 @@ router.post('/', (req, res) => {
                     officialLink: req.body.officialLink,
                     category: req.body.category,
                     documentationLink: req.body.documentationLink,
+                    user: req.user.id,
                 })
                 newApi.save().then((apiData) => {
                     return res.json({ result: true, apiData: apiData })
