@@ -6,6 +6,7 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const BlacklistedToken = require("../models/blacklistedToken");
 const { hashToken } = require("../utils/hashToken");
+const checkToken = require("../middlewares/checkToken");
 
 router.post("/signup", async (req, res) => {
     try {
@@ -130,6 +131,24 @@ router.post("/signout", async (req, res) => {
 
     } catch (error) {
         return res.json({ result: false, error: error.message });
+    }
+})
+
+router.get("/me", checkToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password");
+
+        if (!user) {
+            return res.status(404).json({ result: false, error: "User not found" });
+        }
+
+        res.json({
+            result: true,
+            user
+        })
+
+    } catch (error) {
+        res.status(500).json({ result: false, error: error.message });
     }
 })
 
