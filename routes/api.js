@@ -61,7 +61,7 @@ router.put('/:id', checkToken, async (req, res) => {
         documentationLink: req.body.documentationLink || null,
     }
     const updatedApi = await Api.updateOne(
-        {_id: req.params.id},
+        { _id: req.params.id },
         updateData,
     );
     console.log(updatedApi)
@@ -73,11 +73,10 @@ router.delete('/', (req, res) => {
         return res.json({ result: false, error: 'Missing API name' });
     }
     Api.deleteOne({ name: req.body.name }).then(data => {
-        console.log(data)
-        if (data) {
+        if (data.deletedCount) {
             res.json({ result: true, message: 'API deleted' })
         } else {
-            res.json({ result: false })
+            res.json({ result: false, message: 'API not found' })
         }
     })
 })
