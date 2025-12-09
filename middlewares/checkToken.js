@@ -5,9 +5,8 @@ const { compareToken } = require("../utils/hashToken");
 module.exports = async function (req, res, next) {
     try {
         const authHeader = req.headers.authorization;
-
         if (!authHeader) {
-            return res.status(401).json({ result: false, error: "No token provided" });
+            return res.status(401).json({ result: false, error: "No access token provided" });
         }
 
         const token = authHeader.replace("Bearer ", "");
@@ -21,10 +20,12 @@ module.exports = async function (req, res, next) {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
         req.user = decoded;
 
         next();
+
     } catch (error) {
-        return res.status(401).json({ result: false, error: "Invalid or expired token" });
+        return res.status(401).json({ result: false, error: "Invalid or expired access token" });
     }
-}
+};

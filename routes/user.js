@@ -55,8 +55,8 @@ router.post("/signup", async (req, res) => {
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            secure: false,
+            sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -108,7 +108,7 @@ router.post("/signin", async (req, res) => {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false,
-            sameSite: "strict",
+            sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
