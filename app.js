@@ -9,7 +9,10 @@ var cookieParser = require('cookie-parser');
 var apiRouter = require('./routes/api');
 
 app.use(express.json());
-
+app.use(cors({
+  origin: "http://localhost:3001",
+  credentials: true,
+}));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 
@@ -23,7 +26,6 @@ app.listen(3000, () => {
   console.log("Server running on port 3000");
 });
 
-app.use(cors());
 app.use('/api', apiRouter);
 app.use("/users", userRoutes);
 

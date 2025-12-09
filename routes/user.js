@@ -40,17 +40,29 @@ router.post("/signup", async (req, res) => {
 
         await newUser.save();
 
-        const token = jwt.sign({
-            id: newUser._id,
-            email: newUser.email,
-        },
+        const accessToken = jwt.sign(
+            { id: newUser._id },
             process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        const refreshToken = jwt.sign({
+            id: newUser._id,
+        },
+            process.env.JWT_REFRESH_SECRET,
             { expiresIn: "7d" }
         )
 
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         res.json({
             result: true,
-            token,
+            accessToken,
             user: {
                 id: newUser._id,
                 username: newUser.username,
@@ -65,8 +77,6 @@ router.post("/signup", async (req, res) => {
 
 router.post("/signin", async (req, res) => {
     try {
-
-
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -75,32 +85,43 @@ router.post("/signin", async (req, res) => {
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.json({ result: false, error: "User not found" });
+            return res.json({ result: false, error: "Invalid email or password" });
         }
 
         const passwordIsValid = await bcrypt.compare(password, user.password);
-
         if (!passwordIsValid) {
-            return res.json({ result: false, error: "Invalid password" });
+            return res.json({ result: false, error: "Invalid email or password" });
         }
 
-        const token = jwt.sign({
-            id: user._id,
-            email: user.email,
-        },
+        const accessToken = jwt.sign(
+            { id: user._id },
             process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        const refreshToken = jwt.sign(
+            { id: user._id },
+            process.env.JWT_REFRESH_SECRET,
             { expiresIn: "7d" }
         );
 
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         res.json({
             result: true,
-            token,
+            accessToken,
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
             }
-        })
+        });
+
     } catch (error) {
         res.json({ result: false, error: error.message });
     }
