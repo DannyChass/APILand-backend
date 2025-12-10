@@ -2,7 +2,7 @@ var express = require("express");
 var router = express.Router();
 
 require("../models/connexion");
-const Api = require("../models/apis");
+const Api = require("../models/api");
 const checkToken = require("../middlewares/checkToken");
 
 router.post("/", checkToken, (req, res) => {
@@ -22,6 +22,7 @@ router.post("/", checkToken, (req, res) => {
           category: req.body.category,
           documentationLink: req.body.documentationLink,
           user: req.user.id,
+          tags: req.body.tags || []
         });
         newApi.save().then((apiData) => {
           return res.json({ result: true, apiData: apiData });
@@ -31,15 +32,15 @@ router.post("/", checkToken, (req, res) => {
   }
 });
 
-router.get('/allApi/:text', async (req,res) => {
+router.get('/allApi/:text', async (req, res) => {
   const text = req.params.text;
 
   try {
-    const api = await Api.find({name: {$regex: text, $options: 'i'}})
+    const api = await Api.find({ name: { $regex: text, $options: 'i' } })
 
     res.json(api)
   } catch (error) {
-    res.status(500).json({result: false, error: error})
+    res.status(500).json({ result: false, error: error })
   }
 })
 
@@ -86,7 +87,9 @@ router.put("/:id", checkToken, async (req, res) => {
     officialLink: req.body.officialLink || null,
     category: req.body.category || null,
     documentationLink: req.body.documentationLink || null,
+    tags: req.body.tags || []
   };
+
   const updatedApi = await Api.updateOne({ _id: req.params.id }, updateData);
   console.log(updatedApi);
   return res.json({ result: true, message: "API successfully updated." });
