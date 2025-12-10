@@ -5,6 +5,7 @@ require("../models/connexion");
 const Api = require("../models/api");
 const Tag = require("../models/tag");
 const checkToken = require("../middlewares/checkToken");
+const User = require("../models/user");
 
 router.post("/create", checkToken, async (req, res) => {
   try {
@@ -45,12 +46,27 @@ router.post("/create", checkToken, async (req, res) => {
 
     const apiData = await newApi.save();
 
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { $push: { createdApis: apiData._id } }
+    );
+
     return res.json({ result: true, api: apiData });
 
   } catch (error) {
     console.error("Error craeting API:", error);
     return res.status(500).json({ result: false, error: error.message });
   }
+})
+
+router.get("/created/:userId", async (req, res) => {
+  const user = await User.findById(req.params.userId).populate("createdApis");
+
+  if (!user) {
+    return res.json({ result: false, error: "User no found" })
+  }
+
+  res.json({ result: false, apis: user.createdApis });
 })
 
 router.get('/user/:userId', async (req, res) => {
