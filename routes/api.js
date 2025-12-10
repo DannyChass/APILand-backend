@@ -77,16 +77,6 @@ router.get("/allApi", async (req, res) => {
   }
 });
 
-router.get("/:name", (req, res) => {
-  Api.findOne({ name: req.params.name }).then((data) => {
-    if (data) {
-      res.json({ result: true, api: data });
-    } else {
-      res.json({ result: false, error: "API not found" });
-    }
-  });
-});
-
 router.put("/:id", checkToken, async (req, res) => {
   if (!req.body.name || req.body.name === "") {
     return res.json({ result: false, error: "missing compulsory field" });
@@ -125,6 +115,25 @@ router.delete("/", (req, res) => {
       res.json({ result: true, message: "API deleted" });
     } else {
       res.json({ result: false, message: "API not found" });
+    }
+  });
+});
+
+router.get("/top", async (req, res) => {
+  try {
+    const topApis = await Api.find().sort({ notation: -1 }).limit(10);
+    res.json({ result: true, apis: topApis });
+  } catch (error) {
+    res.status(500).json({ result: false, error: error.message });
+  }
+})
+
+router.get("/:name", (req, res) => {
+  Api.findOne({ name: req.params.name }).then((data) => {
+    if (data) {
+      res.json({ result: true, api: data });
+    } else {
+      res.json({ result: false, error: "API not found" });
     }
   });
 });
