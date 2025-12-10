@@ -53,6 +53,24 @@ router.post("/create", checkToken, async (req, res) => {
   }
 })
 
+router.get('/:user', async (req,res) => {
+  const user = req.params.user
+
+  try {
+    const apis = await Api.find({user: user})
+    if(apis.lenght===0){
+      res.json({result: false, error: "Aucune API crées"})
+    }
+    res.json({result:true, apis})
+
+
+
+  } catch (error) {
+    console.log(error)
+    res.json({result: false, error: error.message})
+  }
+})
+
 router.get('/allApi/:text', async (req, res) => {
   const text = req.params.text;
 
