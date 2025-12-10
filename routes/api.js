@@ -6,6 +6,7 @@ const Api = require("../models/api");
 const Tag = require("../models/tag");
 const checkToken = require("../middlewares/checkToken");
 const User = require("../models/user");
+const ApiFollower = require("../models/apiFollower");
 
 router.post("/create", checkToken, async (req, res) => {
   try {
@@ -56,6 +57,32 @@ router.post("/create", checkToken, async (req, res) => {
   } catch (error) {
     console.error("Error craeting API:", error);
     return res.status(500).json({ result: false, error: error.message });
+  }
+})
+
+router.post("/follow/:apiId", checkToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const apiId = req.params.apiId;
+
+    const api = await Api.findById(apiId);
+    if (!api) {
+      return res.json({ result: false, error: "API no found" });
+    }
+
+    const follow = await ApiFollower.create({
+      user: userId,
+      api: apiId
+    });
+
+    return res.json({ result: true, follow });
+
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.json({ result: false, error: "Already following this API" });
+    }
+
+    return res.json({ result: false, error: error.message });
   }
 })
 
@@ -171,5 +198,7 @@ router.get("/:name", (req, res) => {
     }
   });
 });
+
+
 
 module.exports = router;
