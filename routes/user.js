@@ -213,4 +213,32 @@ router.patch("/me", checkToken, async (req, res) => {
     }
 })
 
+router.post("/refresh", async (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            return res.json({ result: false, error: "No refresh token provided" });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        } catch (err) {
+            return res.json({ result: false, error: "Invalid refresh token" });
+        }
+
+        const accessToken = jwt.sign(
+            { id: decoded.id },
+            process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        res.json({ result: true, accessToken });
+
+    } catch (error) {
+        res.json({ result: false, error: error.message });
+    }
+});
+
 module.exports = router;

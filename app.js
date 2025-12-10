@@ -22,11 +22,11 @@ app.get("/", (req, res) => {
   res.send("API Running with MongoDB!");
 });
 
+app.use('/apis', apiRouter);
+app.use("/users", userRoutes);
+
 app.listen(3000, () => {
   console.log("Server running on port 3000");
 });
-
-app.use('/api', apiRouter);
-app.use("/users", userRoutes);
 
 module.exports = app;

@@ -3,34 +3,55 @@ var router = express.Router();
 
 require("../models/connexion");
 const Api = require("../models/api");
+const Tag = require("../models/tag");
 const checkToken = require("../middlewares/checkToken");
 
-router.post("/", checkToken, (req, res) => {
-  console.log(req.body);
-  if (!req.body || !req.body.name || req.body.name === "") {
-    res.json({ result: false, error: "missing compulsory field" });
-  } else {
-    Api.findOne({ name: req.body.name }).then((data) => {
-      if (data) {
-        return res.json({ result: false, error: "Api already exist" });
-      } else {
-        const newApi = new Api({
-          name: req.body.name,
-          image: req.body.image,
-          description: req.body.description,
-          officialLink: req.body.officialLink,
-          category: req.body.category,
-          documentationLink: req.body.documentationLink,
-          user: req.user.id,
-          tags: req.body.tags || []
-        });
-        newApi.save().then((apiData) => {
-          return res.json({ result: true, apiData: apiData });
-        });
+router.post("/create", checkToken, async (req, res) => {
+  try {
+    const { name, description, officialLink, documentationLink, category, image, tags } = req.body;
+
+    if (!name || name === "") {
+      return res.json({ result: false, error: "missing compulsory field" });
+    }
+
+    const existing = await Api.findOne({ name });
+    if (existing) {
+      return res.json({ result: false, error: "Api already exist" });
+    }
+
+    const tagIds = [];
+
+    for (const tagName of tags || []) {
+      let tag = await Tag.findOne({ name: tagName });
+
+      if (!tag) {
+        tag = new Tag({ name: tagName });
+        await tag.save();
       }
-    });
+
+      tagIds.push(tag._id);
+    }
+
+    const newApi = new Api({
+      name,
+      description,
+      officialLink,
+      documentationLink,
+      category,
+      image,
+      user: req.user.id,
+      tags: tagIds,
+    })
+
+    const apiData = await newApi.save();
+
+    return res.json({ result: true, api: apiData });
+
+  } catch (error) {
+    console.error("Error craeting API:", error);
+    return res.status(500).json({ result: false, error: error.message });
   }
-});
+})
 
 router.get('/allApi/:text', async (req, res) => {
   const text = req.params.text;
