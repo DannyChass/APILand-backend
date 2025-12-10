@@ -53,21 +53,21 @@ router.post("/create", checkToken, async (req, res) => {
   }
 })
 
-router.get('/:user', async (req,res) => {
-  const user = req.params.user
+router.get('/user/:userId', async (req, res) => {
+  const userId = req.params.userId
 
   try {
-    const apis = await Api.find({user: user})
-    if(apis.lenght===0){
-      res.json({result: false, error: "Aucune API crées"})
+    const apis = await Api.find({ user: userId });
+
+    if (apis.lenght === 0) {
+      res.json({ result: false, error: "Aucune API créée pour cet utilisateur" });
     }
-    res.json({result:true, apis})
 
-
+    res.json({ result: true, apis });
 
   } catch (error) {
     console.log(error)
-    res.json({result: false, error: error.message})
+    res.json({ result: false, error: error.message })
   }
 })
 
