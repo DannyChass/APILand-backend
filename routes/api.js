@@ -59,7 +59,7 @@ router.get('/user/:userId', async (req, res) => {
   try {
     const apis = await Api.find({ user: userId });
 
-    if (apis.lenght === 0) {
+    if (apis.length === 0) {
       res.json({ result: false, error: "Aucune API créée pour cet utilisateur" });
     }
 
