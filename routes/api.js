@@ -128,6 +128,7 @@ router.get('/allApi/:text', async (req, res) => {
 
 router.get('/allApiSearch/:search', async (req, res) => {
   const searchString = req.params.search;
+  console.log("Search String:", searchString);
   const keywords = searchString.trim().split(/\s+/);
 
   const search = keywords.map(keyword => {
