@@ -7,6 +7,7 @@ const Tag = require("../models/tag");
 const checkToken = require("../middlewares/checkToken");
 const User = require("../models/user");
 const ApiFollower = require("../models/apiFollower");
+const Comment = require("../models/comment");
 
 router.post("/create", checkToken, async (req, res) => {
   try {
