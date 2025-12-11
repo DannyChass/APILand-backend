@@ -235,14 +235,20 @@ router.get("/top", async (req, res) => {
   }
 })
 
-router.get("/:name", (req, res) => {
-  Api.findOne({ name: req.params.name }).then((data) => {
-    if (data) {
-      res.json({ result: true, api: data });
-    } else {
-      res.json({ result: false, error: "API not found" });
+router.get("/:name", async (req, res) => {
+  try {
+    const api = await Api.findOne({ name: req.params.name })
+      .populate("user", "username image");
+
+    if (!api) {
+      return res.json({ result: false, error: "API not found" });
     }
-  });
+
+    res.json({ result: true, api });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, error: error.message });
+  }
 });
 
 router.post("/:apiId/comments", checkToken, async (req, res) => {
