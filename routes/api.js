@@ -145,7 +145,7 @@ router.get('/allApiSearch/:search', async (req, res) => {
     const apiSearch = await Api.find({ $or: search });
     res.json(apiSearch);
     console.log(apiSearch);
-    
+
     const calculateMatchScore = (api) => {
       let score = 0;
       keywords.forEach(keyword => {
@@ -244,6 +244,53 @@ router.get("/:name", (req, res) => {
   });
 });
 
+router.post("/:apiId/comments", checkToken, async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || content.trim() === "") {
+      return res.json({ result: false, error: "Empty comment" });
+    }
+
+    const api = await Api.findById(req.params.apiId);
+    if (!api) {
+      return res.json({ result: false, error: "API not found" });
+    }
+
+    const comment = await Comment.create({
+      api: req.params.apiId,
+      author: req.user.id,
+      content,
+      parentComment: null
+    });
+
+    return res.json({ result: true, comment });
+
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    res.status(500).json({ result: false, error: error.message });
+  }
+})
+
+router.get("/:apiId/comments", async (req, res) => {
+  try {
+    const comments = await Comment.find({
+      api: req.params.apiId,
+      parentComment: null
+    })
+      .populate("author", "username image")
+      .populate({
+        path: "replies",
+        populate: { path: "author", select: "username image" }
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({ result: true, comments });
+  } catch (error) {
+    console.error("Error fetching comments", error);
+    res.status(500).json({ result: false, error: error.message });
+  }
+})
 
 
 module.exports = router;

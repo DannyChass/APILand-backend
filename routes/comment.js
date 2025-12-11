@@ -31,3 +31,34 @@ router.post("/comments/:commentId/unlike", checkToken, async (req, res) => {
 
     res.json({ result: true, likes: comment.likes.length });
 })
+
+router.post("/comments/:commentId/reply", checkToken, async (req, res) => {
+    try {
+        const { content } = req.body;
+        const parentCommentId = req.params.commentId;
+
+        if (!content || content.trim() === "") {
+            return res.json({ result: false, error: "Empty reply" });
+        }
+
+        const parent = await Comment.findById(parentCommentId);
+        if (!parent) {
+            return res.json({ result: false, error: "Parent comment not found" });
+        }
+
+        const reply = await Comment.create({
+            api: parent.api,
+            author: req.user.id,
+            content,
+            parentComment: parentCommentId
+        });
+
+        parent.replies.push(reply._id);
+        await parent.save();
+
+        return res.json({ result: true, reply });
+    } catch (error) {
+        console.error("Error creating comment", error);
+        res.status(500).json({ result: false, error: error.message });
+    }
+})
