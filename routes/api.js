@@ -68,24 +68,34 @@ router.post("/follow/:apiId", checkToken, async (req, res) => {
 
     const api = await Api.findById(apiId);
     if (!api) {
-      return res.json({ result: false, error: "API no found" });
+      return res.json({ result: false, error: "API not found" });
     }
 
-    const follow = await ApiFollower.create({
-      user: userId,
-      api: apiId
+    const existingFollow = await ApiFollower.findOne({ user: userId, api: apiId });
+
+    if (existingFollow) {
+      await ApiFollower.deleteOne({ _id: existingFollow._id });
+
+      return res.json({
+        result: true,
+        message: "Unfollowed",
+        isFollowed: false
+      });
+    }
+
+    const follow = await ApiFollower.create({ user: userId, api: apiId });
+
+    return res.json({
+      result: true,
+      message: "Followed",
+      isFollowed: true
     });
 
-    return res.json({ result: true, follow });
-
   } catch (error) {
-    if (error.code === 11000) {
-      return res.json({ result: false, error: "Already following this API" });
-    }
-
+    console.error("Follow toggle error:", error);
     return res.json({ result: false, error: error.message });
   }
-})
+});
 
 router.get("/created/:userId", async (req, res) => {
   const user = await User.findById(req.params.userId).populate("createdApis");
@@ -299,5 +309,22 @@ router.get("/:apiId/comments", async (req, res) => {
   }
 })
 
+router.get("/follow/:apiId/status", checkToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const apiId = req.params.apiId;
+
+    const follow = await ApiFollower.findOne({ user: userId, api: apiId });
+
+    return res.json({
+      result: true,
+      isFollowed: !!follow
+    });
+
+  } catch (error) {
+    console.error("Error checking follow:", error);
+    res.json({ result: false, error: error.message });
+  }
+});
 
 module.exports = router;
