@@ -260,4 +260,21 @@ router.post("/refresh", async (req, res) => {
     }
 });
 
+router.delete('/me', checkToken, async (req,res) => {
+try {
+    const userId = req.user.id
+
+    const deletedUser = await User.findByIdAndDelete(userId)
+
+    if(!deletedUser){
+        res.status(404).json({result: false ,error:  'User not found'})
+    }
+    
+    res.json({result: true, message: 'User deleted successfully'})
+} catch (error) {
+    res.status(500).json({result: false, error: error.message})
+}
+
+})
+
 module.exports = router;
