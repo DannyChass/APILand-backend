@@ -7,7 +7,10 @@ const userSchema = new mongoose.Schema({
     image: { type: String },
     email: { type: String, required: true, unique: true },
     password: { type: String },
-    telephoneNumber: { type: String },
+    birthDate: {type: Date, default:null},
+    gender: {type: String, default:''},
+    country: {type: String, default:""},
+    telephoneNumber: { type: String, default:"" },
     createdApis: [
         { type: mongoose.Schema.Types.ObjectId, ref: "apis" }
     ]

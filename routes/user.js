@@ -11,7 +11,7 @@ const checkToken = require("../middlewares/checkToken");
 router.post("/signup", async (req, res) => {
     try {
 
-        const { username, firstname, lastname, email, password, telephoneNumber } = req.body;
+        const { username, firstname, lastname, email, password } = req.body;
 
         if (!username || !email || !password) {
             return res.json({ result: false, error: "Missing fields" });
@@ -35,7 +35,6 @@ router.post("/signup", async (req, res) => {
             lastname: lastname,
             email: email,
             password: hashPassword,
-            telephoneNumber: telephoneNumber,
         })
 
         await newUser.save();
@@ -168,6 +167,28 @@ router.get("/me", checkToken, async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ result: false, error: error.message });
+    }
+})
+
+
+router.put("/me", checkToken, async(req,res) => {
+    try {
+        const userId = req.user.id;
+        const {email, telephoneNumber, birthDate, gender, country } = req.body
+        //const updates = req.body
+
+        const updatedUser = await User.findByIdAndUpdate(userId,
+            {email, telephoneNumber, birthDate, gender, country},
+            //{$set: updates},
+            {new: true}
+        );
+
+        if(!updatedUser){
+            res.status(404).json({result: false, error: "User not found"})
+        }
+        res.json({result: true, user : updatedUser})
+    } catch (error) {
+        res.status(500).json({result: false, error: error.message})
     }
 })
 
