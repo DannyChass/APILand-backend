@@ -9,58 +9,7 @@ const User = require("../models/user");
 const ApiFollower = require("../models/apiFollower");
 const Comment = require("../models/comment");
 const News = require("../models/news");
-
-router.post("/create", checkToken, async (req, res) => {
-  try {
-    const { name, description, officialLink, documentationLink, category, image, tags } = req.body;
-
-    if (!name || name === "") {
-      return res.json({ result: false, error: "missing compulsory field" });
-    }
-
-    const existing = await Api.findOne({ name });
-    if (existing) {
-      return res.json({ result: false, error: "Api already exist" });
-    }
-
-    const tagIds = [];
-
-    for (const tagName of tags || []) {
-      let tag = await Tag.findOne({ name: tagName });
-
-      if (!tag) {
-        tag = new Tag({ name: tagName });
-        await tag.save();
-      }
-
-      tagIds.push(tag._id);
-    }
-
-    const newApi = new Api({
-      name,
-      description,
-      officialLink,
-      documentationLink,
-      category,
-      image,
-      user: req.user.id,
-      tags: tagIds,
-    })
-
-    const apiData = await newApi.save();
-
-    await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { createdApis: apiData._id } }
-    );
-
-    return res.json({ result: true, api: apiData });
-
-  } catch (error) {
-    console.error("Error craeting API:", error);
-    return res.status(500).json({ result: false, error: error.message });
-  }
-})
+router.use("/", require("./api/api.routes"));
 
 router.post("/follow/:apiId", checkToken, async (req, res) => {
   try {
@@ -105,25 +54,7 @@ router.get("/created/:userId", async (req, res) => {
     return res.json({ result: false, error: "User no found" })
   }
 
-  res.json({ result: false, apis: user.createdApis });
-})
-
-router.get('/user/:userId', async (req, res) => {
-  const userId = req.params.userId
-
-  try {
-    const apis = await Api.find({ user: userId });
-
-    if (apis.length === 0) {
-      res.json({ result: false, error: "Aucune API créée pour cet utilisateur" });
-    }
-
-    res.json({ result: true, apis });
-
-  } catch (error) {
-    console.log(error)
-    res.json({ result: false, error: error.message })
-  }
+  res.json({ result: true, apis: user.createdApis });
 })
 
 router.get('/allApi/:text', async (req, res) => {
@@ -174,7 +105,7 @@ router.get('/allApiSearch/:search', async (req, res) => {
       const scoreB = calculateMatchScore(b);
 
       return scoreB - scoreA;
-      
+
     });
     res.json(sortedApiSearch);
     console.log(sortedApiSearch);
@@ -193,48 +124,6 @@ router.get("/allApi", async (req, res) => {
     console.log(error);
     res.status(500).json({ result: false });
   }
-});
-
-router.put("/:id", checkToken, async (req, res) => {
-  if (!req.body.name || req.body.name === "") {
-    return res.json({ result: false, error: "missing compulsory field" });
-  }
-  const apiToUpdate = await Api.findById(req.params.id);
-  // if (!apiToUpdate) {
-  //     return res.json({ result: false, error: 'Api not found' })
-  // }
-  if (apiToUpdate.user.toString() !== req.user.id) {
-    return res.json({
-      result: false,
-      error: "Unauthorized: You are not the owner of this API.",
-    });
-  }
-  const updateData = {
-    name: req.body.name,
-    image: req.body.image || null,
-    description: req.body.description || null,
-    officialLink: req.body.officialLink || null,
-    category: req.body.category || null,
-    documentationLink: req.body.documentationLink || null,
-    tags: req.body.tags || []
-  };
-
-  const updatedApi = await Api.updateOne({ _id: req.params.id }, updateData);
-  console.log(updatedApi);
-  return res.json({ result: true, message: "API successfully updated." });
-});
-
-router.delete("/", (req, res) => {
-  if (!req.body.name) {
-    return res.json({ result: false, error: "Missing API name" });
-  }
-  Api.deleteOne({ name: req.body.name }).then((data) => {
-    if (data.deletedCount) {
-      res.json({ result: true, message: "API deleted" });
-    } else {
-      res.json({ result: false, message: "API not found" });
-    }
-  });
 });
 
 router.get("/top", async (req, res) => {
@@ -256,22 +145,6 @@ router.get("/:apiId/news", async (req, res) => {
   } catch (error) {
     console.error("Fetch news error:", error);
     res.json({ result: false, error: "Cannot fetch news" });
-  }
-});
-
-router.get("/:name", async (req, res) => {
-  try {
-    const api = await Api.findOne({ name: req.params.name })
-      .populate("user", "username image");
-
-    if (!api) {
-      return res.json({ result: false, error: "API not found" });
-    }
-
-    res.json({ result: true, api });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ result: false, error: error.message });
   }
 });
 
