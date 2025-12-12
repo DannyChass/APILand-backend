@@ -8,6 +8,7 @@ const checkToken = require("../middlewares/checkToken");
 const User = require("../models/user");
 const ApiFollower = require("../models/apiFollower");
 const Comment = require("../models/comment");
+const News = require("../models/news");
 
 router.post("/create", checkToken, async (req, res) => {
   try {
@@ -68,24 +69,34 @@ router.post("/follow/:apiId", checkToken, async (req, res) => {
 
     const api = await Api.findById(apiId);
     if (!api) {
-      return res.json({ result: false, error: "API no found" });
+      return res.json({ result: false, error: "API not found" });
     }
 
-    const follow = await ApiFollower.create({
-      user: userId,
-      api: apiId
+    const existingFollow = await ApiFollower.findOne({ user: userId, api: apiId });
+
+    if (existingFollow) {
+      await ApiFollower.deleteOne({ _id: existingFollow._id });
+
+      return res.json({
+        result: true,
+        message: "Unfollowed",
+        isFollowed: false
+      });
+    }
+
+    const follow = await ApiFollower.create({ user: userId, api: apiId });
+
+    return res.json({
+      result: true,
+      message: "Followed",
+      isFollowed: true
     });
 
-    return res.json({ result: true, follow });
-
   } catch (error) {
-    if (error.code === 11000) {
-      return res.json({ result: false, error: "Already following this API" });
-    }
-
+    console.error("Follow toggle error:", error);
     return res.json({ result: false, error: error.message });
   }
-})
+});
 
 router.get("/created/:userId", async (req, res) => {
   const user = await User.findById(req.params.userId).populate("createdApis");
@@ -235,14 +246,33 @@ router.get("/top", async (req, res) => {
   }
 })
 
-router.get("/:name", (req, res) => {
-  Api.findOne({ name: req.params.name }).then((data) => {
-    if (data) {
-      res.json({ result: true, api: data });
-    } else {
-      res.json({ result: false, error: "API not found" });
+router.get("/:apiId/news", async (req, res) => {
+  try {
+    const news = await News.find({ api: req.params.apiId })
+      .sort({ createdAt: -1 })
+      .populate("author", "username image");
+
+    res.json({ result: true, news });
+  } catch (error) {
+    console.error("Fetch news error:", error);
+    res.json({ result: false, error: "Cannot fetch news" });
+  }
+});
+
+router.get("/:name", async (req, res) => {
+  try {
+    const api = await Api.findOne({ name: req.params.name })
+      .populate("user", "username image");
+
+    if (!api) {
+      return res.json({ result: false, error: "API not found" });
     }
-  });
+
+    res.json({ result: true, api });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ result: false, error: error.message });
+  }
 });
 
 router.post("/:apiId/comments", checkToken, async (req, res) => {
@@ -293,5 +323,22 @@ router.get("/:apiId/comments", async (req, res) => {
   }
 })
 
+router.get("/follow/:apiId/status", checkToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const apiId = req.params.apiId;
+
+    const follow = await ApiFollower.findOne({ user: userId, api: apiId });
+
+    return res.json({
+      result: true,
+      isFollowed: !!follow
+    });
+
+  } catch (error) {
+    console.error("Error checking follow:", error);
+    res.json({ result: false, error: error.message });
+  }
+});
 
 module.exports = router;

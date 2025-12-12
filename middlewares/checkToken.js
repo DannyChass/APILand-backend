@@ -3,7 +3,6 @@ const BlacklistedToken = require("../models/blacklistedToken");
 const { compareToken } = require("../utils/hashToken");
 
 module.exports = async function (req, res, next) {
-    console.log("CHECKTOKEN CALLED");
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -21,8 +20,6 @@ module.exports = async function (req, res, next) {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        console.log("DECODED USER:", decoded);
 
         req.user = decoded;
 
