@@ -8,6 +8,7 @@ const checkToken = require("../middlewares/checkToken");
 const User = require("../models/user");
 const ApiFollower = require("../models/apiFollower");
 const Comment = require("../models/comment");
+const News = require("../models/news");
 
 router.post("/create", checkToken, async (req, res) => {
   try {
@@ -244,6 +245,19 @@ router.get("/top", async (req, res) => {
     res.status(500).json({ result: false, error: error.message });
   }
 })
+
+router.get("/:apiId/news", async (req, res) => {
+  try {
+    const news = await News.find({ api: req.params.apiId })
+      .sort({ createdAt: -1 })
+      .populate("author", "username image");
+
+    res.json({ result: true, news });
+  } catch (error) {
+    console.error("Fetch news error:", error);
+    res.json({ result: false, error: "Cannot fetch news" });
+  }
+});
 
 router.get("/:name", async (req, res) => {
   try {
