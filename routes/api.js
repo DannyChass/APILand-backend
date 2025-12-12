@@ -143,9 +143,7 @@ router.get('/allApiSearch/:search', async (req, res) => {
   });
 
   try {
-    const apiSearch = await Api.find({ $or: search });
-    res.json(apiSearch);
-    console.log(apiSearch);
+    const apiSearch = await Api.find({ $or: search })
 
     const calculateMatchScore = (api) => {
       let score = 0;
@@ -160,13 +158,15 @@ router.get('/allApiSearch/:search', async (req, res) => {
       });
       return score;
     };
-    const sortedApiSearch = apiSearch.sort((a, b) => {
+    const sortedApiSearch = [...apiSearch].sort((a, b) => {
       const scoreA = calculateMatchScore(a);
       const scoreB = calculateMatchScore(b);
 
       return scoreB - scoreA;
-      res.json(sortedApiSearch);
+      
     });
+    res.json(sortedApiSearch);
+    console.log(sortedApiSearch);
   } catch (error) {
     res.status(500).json({ result: false, error: error })
   }
