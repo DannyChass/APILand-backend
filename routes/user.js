@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const BlacklistedToken = require("../models/blacklistedToken");
 const { hashToken } = require("../utils/hashToken");
 const checkToken = require("../middlewares/checkToken");
+const apiFollower = require("../models/apiFollower");
 
 router.post("/signup", async (req, res) => {
     try {
@@ -174,11 +175,11 @@ router.get("/me", checkToken, async (req, res) => {
 router.put("/me", checkToken, async(req,res) => {
     try {
         const userId = req.user.id;
-        const {email, telephoneNumber, birthDate, gender, country } = req.body
+        const {email, telephoneNumber, birthDate, gender, country, description, githubLink } = req.body
         //const updates = req.body
 
         const updatedUser = await User.findByIdAndUpdate(userId,
-            {email, telephoneNumber, birthDate, gender, country},
+            {email, telephoneNumber, birthDate, gender, country, description, githubLink},
             //{$set: updates},
             {new: true}
         );
@@ -275,6 +276,26 @@ try {
     res.status(500).json({result: false, error: error.message})
 }
 
+})
+
+router.get('/follow/:userId',checkToken, async (req,res) => {
+    try {
+        const userId = req.user.id
+        const targetUserId = req.params.id 
+    
+
+    const follow = await apiFollower.findOne({ user: userId, target: targetUserId }).populate('api').lean();
+
+    if (!follow) {
+      return res.json({ result: false,isFollowed:false, error: "API not found" });
+    }
+
+res.json({result:true, isFollowed: true, data: follow ? { id: follow._id, user: follow.user, apis: follow.api } : null
+})
+    } catch (error) {
+        res.status(500).json({result: false, error: error.message})
+    }
+    
 })
 
 module.exports = router;

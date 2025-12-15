@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
     birthDate: {type: Date, default:null},
     gender: {type: String, default:''},
     country: {type: String, default:""},
+    description: {type: String, default:""},
+    githubLink: {type: String, default:""},
     telephoneNumber: { type: String, default:"" },
     createdApis: [
         { type: mongoose.Schema.Types.ObjectId, ref: "apis" }

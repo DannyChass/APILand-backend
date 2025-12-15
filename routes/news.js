@@ -55,4 +55,24 @@ router.post("/", checkToken, async (req, res) => {
     }
 });
 
+router.get("/", async (req, res) => {
+    try {
+        const news = await News.find({ isPublished: true })
+            .populate("api", "name image")
+            .populate("author", "username")
+            .sort({ createdAt: -1 });
+
+        return res.json({
+            result: true,
+            news,
+        });
+    } catch (error) {
+        console.error("GET NEWS ERROR:", error);
+        return res.json({
+            result: false,
+            error: "Server error",
+        })
+    }
+});
+
 module.exports = router;
