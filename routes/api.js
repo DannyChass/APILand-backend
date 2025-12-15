@@ -11,6 +11,27 @@ const Comment = require("../models/comment");
 const News = require("../models/news");
 router.use("/", require("./api/api.routes"));
 
+router.get("/top", async (req, res) => {
+  try {
+    const topApis = await Api.find().sort({ notation: -1 }).limit(10);
+    res.json({ result: true, apis: topApis });
+  } catch (error) {
+    res.status(500).json({ result: false, error: error.message });
+  }
+})
+
+router.get('/allApi/:text', async (req, res) => {
+  const text = req.params.text;
+
+  try {
+    const api = await Api.find({ name: { $regex: text, $options: 'i' } })
+
+    res.json(api)
+  } catch (error) {
+    res.status(500).json({ result: false, error: error })
+  }
+})
+
 router.post("/follow/:apiId", checkToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -55,18 +76,6 @@ router.get("/created/:userId", async (req, res) => {
   }
 
   res.json({ result: true, apis: user.createdApis });
-})
-
-router.get('/allApi/:text', async (req, res) => {
-  const text = req.params.text;
-
-  try {
-    const api = await Api.find({ name: { $regex: text, $options: 'i' } })
-
-    res.json(api)
-  } catch (error) {
-    res.status(500).json({ result: false, error: error })
-  }
 })
 
 router.get('/allApiSearch/:search', async (req, res) => {
@@ -125,15 +134,6 @@ router.get("/allApi", async (req, res) => {
     res.status(500).json({ result: false });
   }
 });
-
-router.get("/top", async (req, res) => {
-  try {
-    const topApis = await Api.find().sort({ notation: -1 }).limit(10);
-    res.json({ result: true, apis: topApis });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
-  }
-})
 
 router.get("/:apiId/news", async (req, res) => {
   try {

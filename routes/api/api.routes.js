@@ -79,22 +79,6 @@ router.get("/user/:userId", async (req, res) => {
     }
 });
 
-router.get("/:name", async (req, res) => {
-    try {
-        const api = await Api.findOne({ name: req.params.name })
-            .populate("user", "username image");
-
-        if (!api) {
-            return res.json({ result: false, error: "API not found" });
-        }
-
-        res.json({ result: true, api });
-    } catch (error) {
-        console.error("Get API error:", error);
-        res.status(500).json({ result: false, error: error.message });
-    }
-});
-
 router.put("/:id", checkToken, async (req, res) => {
     try {
         if (!req.body.name || req.body.name.trim() === "") {
@@ -147,6 +131,22 @@ router.delete("/", async (req, res) => {
         res.json({ result: true, message: "API deleted" });
     } catch (error) {
         console.error("Delete API error:", error);
+        res.status(500).json({ result: false, error: error.message });
+    }
+});
+
+router.get("/by-name/:name", async (req, res) => {
+    try {
+        const api = await Api.findOne({ name: req.params.name })
+            .populate("user", "username image");
+
+        if (!api) {
+            return res.json({ result: false, error: "API not found" });
+        }
+
+        res.json({ result: true, api });
+    } catch (error) {
+        console.error("Get API error:", error);
         res.status(500).json({ result: false, error: error.message });
     }
 });
