@@ -169,14 +169,16 @@ router.post("/:apiId/comments", checkToken, async (req, res) => {
       parentComment: null
     });
 
+    const user = await User.findById(req.user.id);
+
     if (api.user._id.toString() !== req.user.id) {
       await Notification.create({
         recipient: api.user._id,
-        sender: req.user.id,          
+        sender: req.user.id,
         type: "comment",
         api: api._id,
         comment: comment._id,
-        message: `${req.user.username} a commenté votre API "${api.name}"`,
+        message: `${user.username} a commenté votre API "${api.name}"`,
       });
     }
 
