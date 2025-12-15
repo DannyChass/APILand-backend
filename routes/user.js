@@ -284,13 +284,18 @@ router.get('/follow/:userId',checkToken, async (req,res) => {
         const targetUserId = req.params.id 
     
 
-    const follow = await apiFollower.findOne({ user: userId, target: targetUserId }).populate('api').lean();
+    const follow = await apiFollower.find({user:userId}).populate({
+    path: 'api',
+    populate: { path: 'user', select: 'username email' } // ici on va chercher le créateur de l’API
+  })
+
+    console.log(follow);
 
     if (!follow) {
       return res.json({ result: false,isFollowed:false, error: "API not found" });
     }
 
-res.json({result:true, isFollowed: true, data: follow ? { id: follow._id, user: follow.user, apis: follow.api } : null
+res.json({result:true, isFollowed: true, data: follow 
 })
     } catch (error) {
         res.status(500).json({result: false, error: error.message})
