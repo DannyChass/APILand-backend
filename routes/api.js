@@ -81,6 +81,9 @@ router.get("/created/:userId", async (req, res) => {
 router.get('/allApiSearch/:search', async (req, res) => {
   const searchString = req.params.search;
   console.log("Search String:", searchString);
+  const currentPage = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 6;
+  const skipIndex = (currentPage - 1) * limit;
   const keywords = searchString.trim().split(/\s+/);
 
   const search = keywords.map(keyword => {
@@ -116,22 +119,42 @@ router.get('/allApiSearch/:search', async (req, res) => {
       return scoreB - scoreA;
 
     });
-    res.json(sortedApiSearch);
-    console.log(sortedApiSearch);
+
+    const totalCount = sortedApiSearch.length;
+    const totalPages = Math.ceil(totalCount / limit);
+    const paginatedResult = sortedApiSearch.slice(skipIndex, skipIndex + limit);
+
+    res.status(200).json({ result: true, allAPI: paginatedResult, pagination: { totalCount, totalPages, currentPage, limit, } });
+    console.log(paginatedResult);
   } catch (error) {
     res.status(500).json({ result: false, error: error })
   }
 })
 
 router.get("/allApi", async (req, res) => {
+  const currentPage = parseInt(req.query.page) || 1
+  const limit = parseInt(req.query.limit) || 6
+  const skipIndex = (currentPage - 1) * limit;
+  const searchQuery = {}
   try {
-    const data = await Api.find();
+    const totalCount = await Api.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalCount / limit);
+    const data = await Api.find(searchQuery).skip(skipIndex).limit(limit);
 
-
-    res.status(200).json({ result: true, allAPI: data });
+    res.status(200).json({ result: true, allAPI: data, pagination: { totalCount, totalPages, currentPage, limit } });
   } catch (error) {
     console.log(error);
     res.status(500).json({ result: false });
+  }
+});
+
+router.get('/:apiId', async (req, res) => {
+  try {
+    const apiId = await Api.findById(req.params.apiId)
+    res.json({ result: true, apiId });
+    console.log(apiId)
+  } catch (error) {
+    res.json({ result: false, error: 'Cannot find Api' })
   }
 });
 
