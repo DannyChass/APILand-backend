@@ -9,6 +9,7 @@ const User = require("../models/user");
 const ApiFollower = require("../models/apiFollower");
 const Comment = require("../models/comment");
 const News = require("../models/news");
+const Notification = require("../models/notification");
 router.use("/", require("./api/api.routes"));
 
 router.get("/top", async (req, res) => {
@@ -156,17 +157,28 @@ router.post("/:apiId/comments", checkToken, async (req, res) => {
       return res.json({ result: false, error: "Empty comment" });
     }
 
-    const api = await Api.findById(req.params.apiId);
+    const api = await Api.findById(req.params.apiId).populate("user");
     if (!api) {
       return res.json({ result: false, error: "API not found" });
     }
 
     const comment = await Comment.create({
-      api: req.params.apiId,
+      api: api._id,
       author: req.user.id,
       content,
       parentComment: null
     });
+
+    if (api.user._id.toString() !== req.user.id) {
+      await Notification.create({
+        recipient: api.user._id,
+        sender: req.user.id,          
+        type: "comment",
+        api: api._id,
+        comment: comment._id,
+        message: `${req.user.username} a commenté votre API "${api.name}"`,
+      });
+    }
 
     return res.json({ result: true, comment });
 
@@ -174,7 +186,8 @@ router.post("/:apiId/comments", checkToken, async (req, res) => {
     console.error("Error creating comment:", error);
     res.status(500).json({ result: false, error: error.message });
   }
-})
+});
+
 
 router.get("/:apiId/comments", async (req, res) => {
   try {
