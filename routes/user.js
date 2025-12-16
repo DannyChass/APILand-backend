@@ -8,6 +8,12 @@ const BlacklistedToken = require("../models/blacklistedToken");
 const { hashToken } = require("../utils/hashToken");
 const checkToken = require("../middlewares/checkToken");
 const apiFollower = require("../models/apiFollower");
+const cloudinary = require('../configs/cloudinary')
+const multer = require("multer");
+
+
+const storage = multer.diskStorage({});
+const upload = multer({ storage });
 
 router.post("/signup", async (req, res) => {
     try {
@@ -172,14 +178,23 @@ router.get("/me", checkToken, async (req, res) => {
 })
 
 
-router.put("/me", checkToken, async(req,res) => {
+router.put("/me", checkToken, upload.single('image'), async(req,res) => {
     try {
         const userId = req.user.id;
         const {email, telephoneNumber, birthDate, gender, country, description, githubLink } = req.body
+        
+        if (req.file) {
+            let imageUrl = null
+        const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "Users_Avatar"
+                })
+                imageUrl = result.secure_url;
+        }
+        
         //const updates = req.body
 
         const updatedUser = await User.findByIdAndUpdate(userId,
-            {email, telephoneNumber, birthDate, gender, country, description, githubLink},
+            {email, telephoneNumber, birthDate, image: imageUrl, gender, country, description, githubLink},
             //{$set: updates},
             {new: true}
         );
