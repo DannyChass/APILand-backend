@@ -41,6 +41,10 @@ app.use(cors({
 }));
 console.log("✅ cors middleware");
 
+const authRoutes = require("./routes/user");
+app.use("/auth", authRoutes);
+
+
 app.use(cookieParser());
 console.log("✅ cookie-parser middleware");
 
