@@ -66,4 +66,25 @@ router.post("/:apiId/endpoints", async (req, res) => {
     }
 });
 
+router.get("/:apiId/endpoints", async (req, res) => {
+    try {
+        const { apiId } = req.params;
+
+        const endpoints = await ApiEndpoint.find({ api: apiId })
+            .sort({ createdAt: 1 });
+
+        res.json({
+            result: true,
+            endpoints,
+        });
+    } catch (error) {
+        console.error("Error fetching endpoints:", error);
+        res.status(500).json({
+            result: false,
+            error: "Internal server error",
+        });
+    }
+});
+
+
 module.exports = router;
