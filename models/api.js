@@ -6,6 +6,7 @@ const apiSchema = mongoose.Schema({
   description: String,
   officialLink: String,
   category: String,
+  price: String,
   documentationLink: String,
   notation: Number,
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
