@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
-const axios = require("axios");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const BlacklistedToken = require("../models/blacklistedToken");
