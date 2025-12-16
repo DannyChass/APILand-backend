@@ -20,4 +20,42 @@ router.get("/", checkToken, async (req, res) => {
     }
 });
 
+router.delete("/:id", checkToken, async (req, res) => {
+    try {
+        const deleted = await Notification.deleteOne({
+            _id: req.params.id,
+            recipient: req.user.id,
+        });
+
+        if (deleted.deletedCount === 0) {
+            return res
+                .status(404)
+                .json({ result: false, error: "Notification not found" });
+        }
+
+        res.json({ result: true });
+    } catch (error) {
+        console.error("Delete notification error:", error);
+        res.status(500).json({ result: false, error: error.message });
+    }
+});
+
+router.patch("/:id/read", checkToken, async (req, res) => {
+    try {
+        const updated = await Notification.updateOne(
+            { _id: req.params.id, recipient: req.user.id },
+            { read: true }
+        );
+
+        if (updated.matchedCount === 0) {
+            return res.status(404).json({ result: false, error: "Notification not found" });
+        }
+
+        res.json({ result: true });
+    } catch (error) {
+        console.error("Read notification error:", error);
+        res.status(500).json({ result: false, error: error.message });
+    }
+})
+
 module.exports = router;

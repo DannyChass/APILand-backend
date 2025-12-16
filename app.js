@@ -26,6 +26,9 @@ console.log("✅ news routes loaded");
 const notificationsRouter = require("./routes/notification");
 console.log("✅ notifications routes loaded");
 
+const apiEndpointRoutes = require("./routes/apiEndpoint");
+console.log("✅ api endpoints routes loaded");
+
 const app = express();
 console.log("✅ express app created");
 
@@ -64,6 +67,9 @@ console.log("✅ /news route registered");
 
 app.use("/notifications", notificationsRouter);
 console.log("✅ /notifications route registered");
+
+app.use("/api", apiEndpointRoutes);
+console.log("✅ /api endpoints route registered");
 
 const PORT = 3000;
 app.listen(PORT, () => {

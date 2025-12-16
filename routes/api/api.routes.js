@@ -5,8 +5,15 @@ const checkToken = require("../../middlewares/checkToken");
 const Api = require("../../models/api");
 const Tag = require("../../models/tag");
 const User = require("../../models/user");
+const cloudinary = require('../../configs/cloudinary')
+const multer = require("multer");
 
-router.post("/create", checkToken, async (req, res) => {
+
+const storage = multer.diskStorage({});
+const upload = multer({ storage });
+
+
+router.post("/create", checkToken, upload.single('image'), async (req, res) => {
     try {
         const {
             name,
@@ -14,13 +21,18 @@ router.post("/create", checkToken, async (req, res) => {
             officialLink,
             documentationLink,
             category,
-            image,
             tags,
         } = req.body;
 
         if (!name || name.trim() === "") {
             return res.json({ result: false, error: "Missing compulsory field" });
         }
+
+        let imageUrl = null;
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "apis"
+        })
+        imageUrl = result.secure_url;
 
         const existingApi = await Api.findOne({ name });
         if (existingApi) {
@@ -45,7 +57,7 @@ router.post("/create", checkToken, async (req, res) => {
             officialLink,
             documentationLink,
             category,
-            image,
+            image :imageUrl,
             user: req.user.id,
             tags: tagIds,
         });
