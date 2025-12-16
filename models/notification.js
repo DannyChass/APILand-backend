@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema(
         },
 
         api: { type: mongoose.Schema.Types.ObjectId, ref: "apis" },
-        ccomment: { type: mongoose.Schema.Types.ObjectId, ref: "comments" },
+        comment: { type: mongoose.Schema.Types.ObjectId, ref: "comments" },
         message: { type: String },
         read: { type: Boolean, default: false },
     },
