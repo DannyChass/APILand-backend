@@ -170,9 +170,7 @@ router.get("/allApi", async (req, res) => {
     mongoQuery.price = price
   };
 
-  if (tag) { // 'tag' contient le Nom du Tag ("Sport")
-    console.log("Nom du Tag reçu (tag) :", tag);
-
+  if (tag) {
     try {
       // 1. Rechercher le document Tag dans la collection 'tags' par le nom
       const tagDocument = await Tag.findOne({ name: tag });
@@ -182,11 +180,6 @@ router.get("/allApi", async (req, res) => {
         const tagObjectId = tagDocument._id;
 
         mongoQuery.tags = { $in: [tagObjectId] };
-
-        console.log("ID du Tag trouvé pour la requête API :", tagObjectId);
-
-      } else {
-        console.log(`Le Tag nommé '${tag}' n'a pas été trouvé.`);
       }
 
     } catch (e) {
