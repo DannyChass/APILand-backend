@@ -12,9 +12,9 @@ const commentSchema = new mongoose.Schema(
 
         likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }]
     },
-
-    { timestamp: true }
-
+    {
+        timestamps: true
+    }
 );
 
 module.exports = mongoose.model("comments", commentSchema);
