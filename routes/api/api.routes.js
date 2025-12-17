@@ -29,10 +29,16 @@ router.post("/create", checkToken, upload.single('image'), async (req, res) => {
         }
 
         let imageUrl = null;
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: "apis"
-        })
-        imageUrl = result.secure_url;
+        if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "apis",
+      });
+      imageUrl = result.secure_url;
+    } else {
+      
+      imageUrl = "https://res.cloudinary.com/der6j42x7/image/upload/v1765990485/apis/oc0fkgin0yef3dpuwkvr.jpg";
+    }
+
 
         const existingApi = await Api.findOne({ name });
         if (existingApi) {
