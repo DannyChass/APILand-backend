@@ -1,7 +1,9 @@
 var express = require("express");
 var router = express.Router();
+const checkToken = require("../middlewares/checkToken");
+const Comment = require('../models/comment')
 
-router.post("/comment/:commentId/like", checkToken, async (req, res) => {
+router.post("/:commentId/like", checkToken, async (req, res) => {
     const userId = req.user.id;
     const { commentId } = req.params;
 
@@ -19,7 +21,7 @@ router.post("/comment/:commentId/like", checkToken, async (req, res) => {
     res.json({ result: true, likes: comment.likes.length });
 });
 
-router.post("/comments/:commentId/unlike", checkToken, async (req, res) => {
+router.post("/:commentId/unlike", checkToken, async (req, res) => {
     const userId = req.user.id;
     const { commentId } = req.params;
 
@@ -32,7 +34,7 @@ router.post("/comments/:commentId/unlike", checkToken, async (req, res) => {
     res.json({ result: true, likes: comment.likes.length });
 })
 
-router.post("/comments/:commentId/reply", checkToken, async (req, res) => {
+router.post("/:commentId/reply", checkToken, async (req, res) => {
     try {
         const { content } = req.body;
         const parentCommentId = req.params.commentId;
@@ -62,3 +64,5 @@ router.post("/comments/:commentId/reply", checkToken, async (req, res) => {
         res.status(500).json({ result: false, error: error.message });
     }
 })
+
+module.exports = router;
