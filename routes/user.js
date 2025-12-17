@@ -395,9 +395,95 @@ router.post("/google", async (req, res) => {
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
-router.get("/auth/github", (req, res) => {
+router.get("/github", (req, res) => {
   const redirectUri = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}`;
   res.redirect(redirectUri);
 });
+
+router.get("/auth/github/callback", async (req, res) => {
+  const { code } = req.query;
+
+  try {
+    
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    const token = tokenData.access_token;
+
+    if (!token) {
+      return res.status(400).json({ result: false, error: "No access token from GitHub" });
+    }
+
+    
+    const userRes = await fetch("https://api.github.com/user", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const userData = await userRes.json();
+
+    
+    const emailsRes = await fetch("https://api.github.com/user/emails", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const emails = await emailsRes.json();
+    const primaryEmail = Array.isArray(emails) ? emails.find(e => e.primary)?.email : null;
+
+    const { id, login, avatar_url } = userData;
+    const email = userData.email || primaryEmail || `${login}@github.local`;
+
+    
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        githubId: id,
+        username: login,
+        email,
+        image: avatar_url,
+      });
+    }
+
+    
+    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    
+    res.json({
+      result: true,
+      accessToken,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        image: user.image,
+      },
+    });
+  } catch (error) {
+    console.error("GitHub login error:", error);
+    res.status(500).json({ result: false, error: error.message });
+  }
+});
+
+
 
 module.exports = router;
