@@ -11,6 +11,22 @@ const Comment = require("../models/comment");
 const News = require("../models/news");
 const Notification = require("../models/notification");
 router.use("/", require("./api/api.routes"));
+const mongoose = require('mongoose');
+
+
+router.get('/filters', async (req, res) => {
+  try {
+    const uniqueCategories = await Api.distinct('category');
+    const uniquePrice = await Api.distinct('price');
+    const allTags = await Tag.find({}).select('name _id').lean();
+
+    res.status(200).json({ result: true, filters: { categories: uniqueCategories, prices: uniquePrice, tags: allTags } });
+  }
+  catch (error) {
+    console.error('Error fetching filters', error);
+    res.status(500).json({ result: false, error: 'Error fetching filters' });
+  }
+})
 
 router.get("/top", async (req, res) => {
   try {
@@ -79,27 +95,135 @@ router.get("/created/:userId", async (req, res) => {
   res.json({ result: true, apis: user.createdApis });
 })
 
-router.get('/allApiSearch/:search', async (req, res) => {
-  const searchString = req.params.search;
-  console.log("Search String:", searchString);
-  const currentPage = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 6;
-  const skipIndex = (currentPage - 1) * limit;
-  const keywords = searchString.trim().split(/\s+/);
+// router.get('/allApiSearch/:search', async (req, res) => {
+//   const searchString = req.params.search;
+//   console.log("Search String:", searchString);
+//   const tag = req.query
+//   const currentPage = parseInt(req.query.page) || 1;
+//   const limit = parseInt(req.query.limit) || 6;
+//   const skipIndex = (currentPage - 1) * limit;
+//   const keywords = searchString.trim().split(/\s+/);
 
-  const search = keywords.map(keyword => {
+
+//   const search = keywords.map(keyword => {
+//     const regex = new RegExp(keyword, 'i');
+//     return {
+//       $or: [
+//         { name: { $regex: regex } },
+//         { category: { $regex: regex } }
+//       ]
+//     }
+//   });
+
+//   try {
+//     const apiSearch = await Api.find({ $or: search })
+
+//     const calculateMatchScore = (api) => {
+//       let score = 0;
+//       keywords.forEach(keyword => {
+//         const searchRegex = new RegExp(keyword, 'i');
+//         if (
+//           (api.name && searchRegex.test(api.name)) ||
+//           (api.category && searchRegex.test(api.category))
+//         ) {
+//           score++;
+//         }
+//       });
+//       return score;
+//     };
+//     const sortedApiSearch = [...apiSearch].sort((a, b) => {
+//       const scoreA = calculateMatchScore(a);
+//       const scoreB = calculateMatchScore(b);
+
+//       return scoreB - scoreA;
+
+//     });
+
+//     const totalCount = sortedApiSearch.length;
+//     const totalPages = Math.ceil(totalCount / limit);
+//     const paginatedResult = sortedApiSearch.slice(skipIndex, skipIndex + limit);
+
+//     res.status(200).json({ result: true, allAPI: paginatedResult, pagination: { totalCount, totalPages, currentPage, limit, } });
+//     console.log(paginatedResult);
+//   } catch (error) {
+//     res.status(500).json({ result: false, error: error })
+//   }
+// })
+
+router.get("/allApi", async (req, res) => {
+  // --- 1. Récupération des Paramètres ---
+  const { page = 1, limit = 6, search, category, price, tag } = req.query;
+  const currentPage = parseInt(page)
+  const limitInt = parseInt(limit)
+  const skipIndex = (currentPage - 1) * limitInt;
+
+  // --- 2. Construction de l'Objet de Filtrage Mongoose ---
+  let mongoQuery = {}
+  let keywords = [];
+
+  // A. Gestion des filtres structurés exacts
+  if (category) {
+    mongoQuery.category = category
+  };
+
+  if (price) {
+    mongoQuery.price = price
+  };
+
+  if (tag) {
+    try {
+      // 1. Rechercher le document Tag dans la collection 'tags' par le nom
+      const tagDocument = await Tag.findOne({ name: tag });
+
+      if (tagDocument) {
+        // 2. Si le Tag est trouvé, utiliser son _id pour filtrer les APIs
+        const tagObjectId = tagDocument._id;
+
+        mongoQuery.tags = { $in: [tagObjectId] };
+      }
+
+    } catch (e) {
+      console.error("Erreur lors de la recherche du Tag par Nom :", e);
+      return res.status(500).json({ result: false, error: "Erreur serveur lors de la recherche du Tag." });
+    }
+  }
+
+
+
+  // B. Gestion de la recherche par mot-clé
+
+  if (search) {
+    keywords = search.trim().split(/\s+/);
+  }
+
+  const searchConditions = keywords.map(keyword => {
     const regex = new RegExp(keyword, 'i');
     return {
       $or: [
         { name: { $regex: regex } },
-        { category: { $regex: regex } }
+        { category: { $regex: regex } },
+        { description: { $regex: regex } }
       ]
     }
   });
 
-  try {
-    const apiSearch = await Api.find({ $or: search })
+  // La clause $and combine les filtres exacts (A) avec la recherche textuelle (B)
+  if (searchConditions.length > 0) {
+    // Note: Si mongoQuery est vide (pas de filtres A), on utilise directement les searchConditions.
+    // Si mongoQuery a déjà des filtres (A), on les combine.
+    if (Object.keys(mongoQuery).length > 0) {
+      mongoQuery = { $and: [mongoQuery, ...searchConditions] };
+    } else {
+      mongoQuery = { $and: searchConditions };
+    }
+  }
 
+  try {
+
+    // Exécution de la requête avec le filtre/recherche combiné. Methode lean permet de ne renvoyer que la donnée JSON, meilleure performance
+    const filteredApi = await Api.find(mongoQuery).lean();
+
+    //Logique de calcul du score de pertinence et de tri des API
     const calculateMatchScore = (api) => {
       let score = 0;
       keywords.forEach(keyword => {
@@ -113,7 +237,7 @@ router.get('/allApiSearch/:search', async (req, res) => {
       });
       return score;
     };
-    const sortedApiSearch = [...apiSearch].sort((a, b) => {
+    const sortedApiSearch = [...filteredApi].sort((a, b) => {
       const scoreA = calculateMatchScore(a);
       const scoreB = calculateMatchScore(b);
 
@@ -121,28 +245,12 @@ router.get('/allApiSearch/:search', async (req, res) => {
 
     });
 
+    // Pagination
     const totalCount = sortedApiSearch.length;
-    const totalPages = Math.ceil(totalCount / limit);
-    const paginatedResult = sortedApiSearch.slice(skipIndex, skipIndex + limit);
+    const totalPages = Math.ceil(totalCount / limitInt);
+    const paginatedResult = sortedApiSearch.slice(skipIndex, skipIndex + limitInt);
 
-    res.status(200).json({ result: true, allAPI: paginatedResult, pagination: { totalCount, totalPages, currentPage, limit, } });
-    console.log(paginatedResult);
-  } catch (error) {
-    res.status(500).json({ result: false, error: error })
-  }
-})
-
-router.get("/allApi", async (req, res) => {
-  const currentPage = parseInt(req.query.page) || 1
-  const limit = parseInt(req.query.limit) || 6
-  const skipIndex = (currentPage - 1) * limit;
-  const searchQuery = {}
-  try {
-    const totalCount = await Api.countDocuments(searchQuery);
-    const totalPages = Math.ceil(totalCount / limit);
-    const data = await Api.find(searchQuery).skip(skipIndex).limit(limit);
-
-    res.status(200).json({ result: true, allAPI: data, pagination: { totalCount, totalPages, currentPage, limit } });
+    res.status(200).json({ result: true, allAPI: paginatedResult, pagination: { totalCount, totalPages, currentPage, limit: limitInt } });
   } catch (error) {
     console.log(error);
     res.status(500).json({ result: false });
@@ -251,5 +359,7 @@ router.get("/follow/:apiId/status", checkToken, async (req, res) => {
     res.json({ result: false, error: error.message });
   }
 });
+
+
 
 module.exports = router;
