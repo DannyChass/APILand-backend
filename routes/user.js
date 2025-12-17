@@ -1,157 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcrypt");
-const { v4: uuidv4 } = require("uuid");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-const BlacklistedToken = require("../models/blacklistedToken");
-const { hashToken } = require("../utils/hashToken");
 const checkToken = require("../middlewares/checkToken");
 const apiFollower = require("../models/apiFollower");
 const cloudinary = require("../configs/cloudinary");
 const multer = require("multer");
 const { OAuth2Client } = require("google-auth-library");
+const authRoutes = require("./user/auth.routes");
+router.use("/", authRoutes);
 
 const storage = multer.diskStorage({});
 const upload = multer({ storage });
-
-router.post("/signup", async (req, res) => {
-  try {
-    const { username, firstname, lastname, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.json({ result: false, error: "Missing fields" });
-    }
-
-    const existtingUser = await User.findOne({
-      $or: [{ email }, { username }],
-    });
-
-    if (existtingUser) {
-      return res.json({
-        result: false,
-        error: "Username or email already used",
-      });
-    }
-
-    const hashPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      username: username,
-      firstname: firstname,
-      lastname: lastname,
-      email: email,
-      password: hashPassword,
-    });
-
-    await newUser.save();
-
-    const accessToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
-
-    const refreshToken = jwt.sign(
-      {
-        id: newUser._id,
-      },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      result: true,
-      accessToken,
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-      },
-    });
-  } catch (error) {
-    res.json({ result: false, error: error.message });
-  }
-});
-
-router.post("/signin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.json({ result: false, error: "Missing fields" });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.json({
-        result: false,
-        error: "Invalid email or password",
-      });
-    }
-
-    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      result: true,
-      accessToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.json({ result: false, error: error.message });
-  }
-});
-
-router.post("/signout", async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return res.json({ result: false, error: "No token provided" });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    try {
-      jwt.verify(token, process.env.JWT_SECRET);
-    } catch (err) {
-      return res.json({ result: false, error: "Invalid or expired token" });
-    }
-
-    const hashed = await hashToken(token);
-
-    const blacklisted = new BlacklistedToken({ tokenHash: hashed });
-    await blacklisted.save();
-
-    return res.json({ result: true, message: "User logged out successfully" });
-  } catch (error) {
-    return res.json({ result: false, error: error.message });
-  }
-});
 
 router.get("/me", checkToken, async (req, res) => {
   try {
@@ -268,31 +128,6 @@ router.patch("/me", checkToken, async (req, res) => {
   }
 });
 
-router.post("/refresh", async (req, res) => {
-  try {
-    const refreshToken = req.cookies.refreshToken;
-
-    if (!refreshToken) {
-      return res.json({ result: false, error: "No refresh token provided" });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    } catch (err) {
-      return res.json({ result: false, error: "Invalid refresh token" });
-    }
-
-    const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
-
-    res.json({ result: true, accessToken });
-  } catch (error) {
-    res.json({ result: false, error: error.message });
-  }
-});
-
 router.delete("/me", checkToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -400,6 +235,8 @@ router.get("/github", (req, res) => {
   res.redirect(redirectUri);
 });
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 router.get("/auth/github/callback", async (req, res) => {
   const { code } = req.query;
 
@@ -487,3 +324,9 @@ router.get("/auth/github/callback", async (req, res) => {
 
 
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> Stashed changes
+=======
+module.exports = router;
+>>>>>>> Stashed changes

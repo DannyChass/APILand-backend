@@ -41,9 +41,6 @@ app.use(cors({
 }));
 console.log("✅ cors middleware");
 
-
-
-
 app.use(cookieParser());
 console.log("✅ cookie-parser middleware");
 
