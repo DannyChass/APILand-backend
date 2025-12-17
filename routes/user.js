@@ -7,140 +7,13 @@ const apiFollower = require("../models/apiFollower");
 const cloudinary = require("../configs/cloudinary");
 const multer = require("multer");
 const { OAuth2Client } = require("google-auth-library");
+const authRoutes = require("./user/auth.routes");
+const profileRoutes = require("./user/profile.routes");
+router.use("/", authRoutes);
+router.use("/", profileRoutes);
 
 const storage = multer.diskStorage({});
 const upload = multer({ storage });
-
-router.get("/me", checkToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-
-    if (!user) {
-      return res.status(404).json({ result: false, error: "User not found" });
-    }
-
-    res.json({
-      result: true,
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
-  }
-});
-
-router.put("/me", checkToken, upload.single("image"), async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const {
-      email,
-      telephoneNumber,
-      birthDate,
-      gender,
-      country,
-      description,
-      githubLink,
-    } = req.body;
-
-    if (req.file) {
-      let imageUrl = null;
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "Users_Avatar",
-      });
-      imageUrl = result.secure_url;
-    }
-
-    //const updates = req.body
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        email,
-        telephoneNumber,
-        birthDate,
-        image: imageUrl,
-        gender,
-        country,
-        description,
-        githubLink,
-      },
-      //{$set: updates},
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      res.status(404).json({ result: false, error: "User not found" });
-    }
-    res.json({ result: true, user: updatedUser });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
-  }
-});
-
-router.patch("/me", checkToken, async (req, res) => {
-  try {
-    const allowedFields = [
-      "username",
-      "firstname",
-      "lastname",
-      "email",
-      "email",
-      "telephoneNumber",
-    ];
-
-    const updates = {};
-
-    for (const key of allowedFields) {
-      if (req.body[key] !== undefined) {
-        updates[key] = req.body[key];
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return res
-        .status(400)
-        .json({ result: false, error: "No valid field provided" });
-    }
-
-    if (updates.email) {
-      const existingEmailUser = await User.findOne({ email: updates.email });
-      if (
-        existingEmailUser &&
-        existingEmailUser._id.toString() !== req.user.id
-      ) {
-        return res
-          .status(400)
-          .json({ result: false, error: "Email already in use" });
-      }
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, {
-      new: true,
-    }).select("-password");
-
-    res.json({
-      result: true,
-      user: updatedUser,
-    });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
-  }
-});
-
-router.delete("/me", checkToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const deletedUser = await User.findByIdAndDelete(userId);
-
-    if (!deletedUser) {
-      res.status(404).json({ result: false, error: "User not found" });
-    }
-
-    res.json({ result: true, message: "User deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
-  }
-});
 
 router.get("/follow/:userId", checkToken, async (req, res) => {
   try {
@@ -149,7 +22,7 @@ router.get("/follow/:userId", checkToken, async (req, res) => {
 
     const follow = await apiFollower.find({ user: userId }).populate({
       path: "api",
-      populate: { path: "user", select: "username email" }, // ici on va chercher le créateur de l’API
+      populate: { path: "user", select: "username email" },
     });
 
     console.log(follow);
@@ -237,7 +110,7 @@ router.get("/auth/github/callback", async (req, res) => {
   const { code } = req.query;
 
   try {
-    
+
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
