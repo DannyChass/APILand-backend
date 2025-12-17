@@ -65,4 +65,33 @@ router.post("/:commentId/reply", checkToken, async (req, res) => {
     }
 })
 
+router.get("/:commentId/replies", async (req, res) => {
+  try {
+    const { commentId } = req.params;
+
+    
+    const parent = await Comment.findById(commentId)
+      .populate({
+        path: "replies",
+        populate: [
+          { path: "author", select: "username image" },
+          { path: "replies", populate: { path: "author", select: "username image" } }
+        ]
+      });   
+
+    if (!parent) {
+      return res.json({ result: false, error: "Parent comment not found" });
+    }
+
+    return res.json({
+      result: true,
+      replies: parent.replies
+    });
+  } catch (error) {
+    console.error("Error fetching replies:", error);
+    res.status(500).json({ result: false, error: error.message });
+  }
+});
+
+
 module.exports = router;
