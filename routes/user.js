@@ -7,8 +7,6 @@ const apiFollower = require("../models/apiFollower");
 const cloudinary = require("../configs/cloudinary");
 const multer = require("multer");
 const { OAuth2Client } = require("google-auth-library");
-const authRoutes = require("./user/auth.routes");
-router.use("/", authRoutes);
 
 const storage = multer.diskStorage({});
 const upload = multer({ storage });
@@ -235,8 +233,6 @@ router.get("/github", (req, res) => {
   res.redirect(redirectUri);
 });
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 router.get("/auth/github/callback", async (req, res) => {
   const { code } = req.query;
 
@@ -259,13 +255,13 @@ router.get("/auth/github/callback", async (req, res) => {
       return res.status(400).json({ result: false, error: "No access token from GitHub" });
     }
 
-    
+
     const userRes = await fetch("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const userData = await userRes.json();
 
-    
+
     const emailsRes = await fetch("https://api.github.com/user/emails", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -275,7 +271,7 @@ router.get("/auth/github/callback", async (req, res) => {
     const { id, login, avatar_url } = userData;
     const email = userData.email || primaryEmail || `${login}@github.local`;
 
-    
+
     let user = await User.findOne({ email });
     if (!user) {
       user = await User.create({
@@ -286,7 +282,7 @@ router.get("/auth/github/callback", async (req, res) => {
       });
     }
 
-    
+
     const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
@@ -304,7 +300,7 @@ router.get("/auth/github/callback", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    
+
     res.json({
       result: true,
       accessToken,
@@ -321,12 +317,4 @@ router.get("/auth/github/callback", async (req, res) => {
   }
 });
 
-
-
 module.exports = router;
-=======
-module.exports = router;
->>>>>>> Stashed changes
-=======
-module.exports = router;
->>>>>>> Stashed changes
