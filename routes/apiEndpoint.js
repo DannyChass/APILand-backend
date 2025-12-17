@@ -3,8 +3,9 @@ const router = express.Router();
 
 const Api = require("../models/api");
 const ApiEndpoint = require("../models/apiEndpoint");
+const checkToken = require("../middlewares/checkToken");
 
-router.post("/:apiId/endpoints", async (req, res) => {
+router.post("/:apiId/endpoints", checkToken, async (req, res) => {
     try {
         const { apiId } = req.params;
 
@@ -85,6 +86,27 @@ router.get("/:apiId/endpoints", async (req, res) => {
         });
     }
 });
+
+router.delete("/:apiId/endpoints/:endpointId", checkToken, async (req, res) => {
+    try {
+        const { apiId, endpointId } = req.params;
+
+
+        const deleted = await ApiEndpoint.findOneAndDelete({
+            _id: endpointId,
+            api: apiId,
+        });
+
+        if (!deleted) {
+            res.status(404).json({ result: false, error: "Endpoint not found" });
+        }
+
+        res.json({ result: true, deleted });
+
+    } catch (error) {
+        res.status(500).json({ result: false, error: "Internal server error" });
+    }
+})
 
 
 module.exports = router;
