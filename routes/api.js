@@ -12,6 +12,7 @@ const News = require("../models/news");
 const Notification = require("../models/notification");
 router.use("/", require("./api/api.routes"));
 const mongoose = require('mongoose');
+const ApiRating = require('../models/apiRating');
 
 
 router.get('/filters', async (req, res) => {
@@ -224,7 +225,7 @@ router.get("/allApi", async (req, res) => {
     const filteredApi = await Api.find(mongoQuery)
       .populate("user", "username image")
       .lean();
-      
+
 
     //Logique de calcul du score de pertinence et de tri des API
     const calculateMatchScore = (api) => {
@@ -362,6 +363,55 @@ router.get("/follow/:apiId/status", checkToken, async (req, res) => {
     res.json({ result: false, error: error.message });
   }
 });
+
+
+router.post("/:apiId/rate", checkToken, async (req, res) => {
+  try {
+    const { value } = req.body;
+    const userId = req.user.id;
+    const apiId = req.params.apiId;
+
+    if (!value || value < 1 || value > 5) {
+      return res.json({ result: false, error: "Rating must be between 1 and 5" });
+    }
+
+    const api = await Api.findById(apiId);
+    if (!api) {
+      return res.json({ result: false, error: "API not found" });
+    }
+
+    if (api.user.toString() === userId) {
+      return res.json({ result: false, error: "You cannot rate you own API" })
+    }
+
+    await ApiRating.findOneAndUpdate(
+      { api: apiId, user: userId },
+      { value },
+      { upsert: true, new: true }
+    );
+
+    const ratings = await ApiRating.find({ api: apiId });
+
+    const count = ratings.length;
+    const average = ratings.reduce((sum, r) => sum + r.value, 0 / count);
+
+    api.rating = {
+      average: Number(average.toFixed(1)),
+      count,
+    }
+
+    await api.save();
+
+    return res.json({
+      result: true,
+      rating: api.rating
+    })
+
+  } catch (error) {
+    console.error("Rate API error:", error);
+    return res.json({ result: false, error: "Server error" });
+  }
+})
 
 
 

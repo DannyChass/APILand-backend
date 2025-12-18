@@ -8,7 +8,12 @@ const apiSchema = mongoose.Schema({
   category: String,
   price: String,
   documentationLink: String,
-  notation: Number,
+
+  rating: {
+    average: { type: Number, default: 0 },
+    count: { type: Number, default: 0 },
+  },
+
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
   tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'tags' }]
 });
