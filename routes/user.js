@@ -102,7 +102,8 @@ const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 router.get("/github", (req, res) => {
-  const redirectUri = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}`;
+  const redirectUri =
+    `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&scope=user:email`;
   res.redirect(redirectUri);
 });
 
@@ -110,10 +111,12 @@ router.get("/auth/github/callback", async (req, res) => {
   const { code } = req.query;
 
   try {
-
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify({
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
@@ -122,28 +125,44 @@ router.get("/auth/github/callback", async (req, res) => {
     });
 
     const tokenData = await tokenRes.json();
-    const token = tokenData.access_token;
+    const githubToken = tokenData.access_token;
 
-    if (!token) {
-      return res.status(400).json({ result: false, error: "No access token from GitHub" });
+    if (!githubToken) {
+      return res.status(400).json({ result: false });
     }
 
-
     const userRes = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${githubToken}` },
     });
     const userData = await userRes.json();
 
-
     const emailsRes = await fetch("https://api.github.com/user/emails", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        Accept: "application/vnd.github+json",
+      },
     });
-    const emails = await emailsRes.json();
-    const primaryEmail = Array.isArray(emails) ? emails.find(e => e.primary)?.email : null;
 
-    const { id, login, avatar_url } = userData;
-    const email = userData.email || primaryEmail || `${login}@github.local`;
+    let primaryEmail = null;
 
+    if (emailsRes.ok) {
+      const emailsData = await emailsRes.json();
+
+      if (Array.isArray(emailsData)) {
+        primaryEmail = emailsData.find(e => e.primary)?.email;
+      }
+    }
+
+    const email = userData.email || primaryEmail;
+
+    if (!email) {
+      return res.status(400).json({
+        result: false,
+        error: "GitHub did not return an email address",
+      });
+    }
+
+    const { login, avatar_url, id } = userData;
 
     let user = await User.findOne({ email });
     if (!user) {
@@ -155,38 +174,16 @@ router.get("/auth/github/callback", async (req, res) => {
       });
     }
 
-
-    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    const refreshToken = jwt.sign(
+    const accessToken = jwt.sign(
       { id: user._id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
     );
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-
-    res.json({
-      result: true,
-      accessToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        image: user.image,
-      },
-    });
-  } catch (error) {
-    console.error("GitHub login error:", error);
-    res.status(500).json({ result: false, error: error.message });
+    return res.json({ result: true, accessToken });
+  } catch (err) {
+    console.error("GITHUB ERROR:", err);
+    return res.status(500).json({ result: false, error: err.message });
   }
 });
 
