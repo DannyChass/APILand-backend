@@ -221,7 +221,10 @@ router.get("/allApi", async (req, res) => {
   try {
 
     // Exécution de la requête avec le filtre/recherche combiné. Methode lean permet de ne renvoyer que la donnée JSON, meilleure performance
-    const filteredApi = await Api.find(mongoQuery).lean();
+    const filteredApi = await Api.find(mongoQuery)
+      .populate("user", "username image")
+      .lean();
+      
 
     //Logique de calcul du score de pertinence et de tri des API
     const calculateMatchScore = (api) => {
