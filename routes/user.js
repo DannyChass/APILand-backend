@@ -61,7 +61,7 @@ router.post("/google", async (req, res) => {
         username: name?.split(" ")[0] || "",
         firstname: name?.split(" ")[0] || "",
         lastname: name?.split(" ")[1] || "",
-        image: picture,
+        image: "https://res.cloudinary.com/der6j42x7/image/upload/v1766136487/Users_Avatar/d9bsyqzxi6zpygibljct.png",
         email,
       });
     }
