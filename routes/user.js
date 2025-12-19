@@ -22,7 +22,7 @@ router.get("/follow/:userId", checkToken, async (req, res) => {
 
     const follow = await apiFollower.find({ user: userId }).populate({
       path: "api",
-      populate: { path: "user", select: "username email" },
+      populate: { path: "user", select: "username email image" },
     });
 
     console.log(follow);
