@@ -38,10 +38,29 @@ console.log("✅ express app created");
 app.use(express.json());
 console.log("✅ json middleware");
 
-app.use(cors({
-  origin: "http://localhost:3001",
-  credentials: true,
-}));
+const allowedOrigins = [
+  "http://localhost:3001",
+  "http://localhost:3000",
+  "https://api-land-frontend.vercel.app",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 console.log("✅ cors middleware");
 
 app.use(cookieParser());
