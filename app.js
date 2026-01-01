@@ -1,42 +1,23 @@
 require("dotenv").config();
-console.log("✅ dotenv loaded");
 
 const express = require("express");
-console.log("✅ express loaded");
-
 const cors = require("cors");
-console.log("✅ cors loaded");
-
 const cookieParser = require("cookie-parser");
-console.log("✅ cookie-parser loaded");
 
-console.log("🔄 Loading database connection...");
 const connectDB = require("./models/connexion");
 
-console.log("🔄 Loading routes...");
 const userRoutes = require("./routes/user");
-console.log("✅ user routes loaded");
-
 const apiRouter = require("./routes/api");
-console.log("✅ api routes loaded");
-
 const newsRoutes = require("./routes/news");
-console.log("✅ news routes loaded");
-
 const notificationsRouter = require("./routes/notification");
-console.log("✅ notifications routes loaded");
-
 const apiEndpointRoutes = require("./routes/apiEndpoint");
-console.log("✅ api endpoints routes loaded");
-
-const commentsRoute = require('./routes/comment');
-console.log("✅ geoffrey a bien fait les comments")
+const commentsRoute = require("./routes/comment");
 
 const app = express();
-console.log("✅ express app created");
 
 app.use(express.json());
-console.log("✅ json middleware");
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:3001",
@@ -48,55 +29,28 @@ app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
       }
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-console.log("✅ cors middleware");
-
-app.use(cookieParser());
-console.log("✅ cookie-parser middleware");
-
-app.use(express.urlencoded({ extended: false }));
-console.log("✅ urlencoded middleware");
-
-console.log("🔄 Connecting to MongoDB...");
-connectDB();
-console.log("✅ connectDB() called");
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 
 app.get("/", (req, res) => {
   res.send("API Running with MongoDB!");
 });
 
-console.log("🔄 Registering routes...");
 app.use("/apis", apiRouter);
-console.log("✅ /apis route registered");
-
 app.use("/users", userRoutes);
-console.log("✅ /users route registered");
-
 app.use("/news", newsRoutes);
-console.log("✅ /news route registered");
-
 app.use("/notifications", notificationsRouter);
-console.log("✅ /notifications route registered");
-
 app.use("/api", apiEndpointRoutes);
-console.log("✅ /api endpoints route registered");
+app.use("/comments", commentsRoute);
 
-app.use('/comments', commentsRoute);
-console.log("✅ encore geoffrey le bg")
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+module.exports = app;
