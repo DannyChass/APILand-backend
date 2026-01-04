@@ -19,7 +19,7 @@
     "uuid": "^13.0.0"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node server.js",
     "dev": "nodemon app.js",
     "test": "cross-env NODE_ENV=test jest"
   },
